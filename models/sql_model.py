@@ -204,7 +204,7 @@ def create_menu():
     ice_cream = Desert(name='Ice cream', price=2.50)
 
     db.session.add_all([
-        pizza, pizza2, pizza3, pizza4, pizza5, pizza6, pizza7, pizza8, pizza9, pizza10
+        pizza, pizza2, pizza3, pizza4, pizza5, pizza6, pizza7, pizza8, pizza9, pizza10,
         coke, fanta, cheese_cake, ice_cream
     ])
     db.session.commit()

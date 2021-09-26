@@ -1,7 +1,7 @@
 from app import app
 from flask_sqlalchemy import SQLAlchemy
 
-app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql://ericbanzuzi:mysql00eb@localhost/db_project'
+app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql://ericbanzuzi:mysql00eb@localhost/DBproject'
 db = SQLAlchemy(app)
 
 
@@ -148,20 +148,18 @@ def create_menu():
     tomato = Topping(name='tomato', price=0.49, vegetarian=True)
     spicy_salami = Topping(name="spicy salami", price=2.99, vegetarian=False)
     pepperoni = Topping(name='pepperoni', price=2.49, vegetarian=False)
-    egg = Topping(name='egg', price = 1.49, vegetarian=True)
-    chicken = Topping(name='chicken', price = 2.49, vegetarian=False)
-    eggplant = Topping(name='eggplant',price = 1.49)
+    egg = Topping(name='egg', price=1.49, vegetarian=True)
+    chicken = Topping(name='chicken', price=2.49, vegetarian=False)
+    eggplant = Topping(name='eggplant', price=1.49, vegetarian=True)
 
     pizza = Pizza(name='Margherita')
     pizza.toppings = [
         tomato_sauce, mozzarella, oregano, Topping(name='garlic oil', price=0.49, vegetarian=True)
     ]
-
     pizza2 = Pizza(name='Hawaii')
     pizza2.toppings = [
         tomato_sauce, mozzarella,  ham, pineapple
     ]
-
     pizza3 = Pizza(name='Veggie')
     pizza3.toppings = [
         tomato_sauce, mozzarella, onion, tomato, mushroom, pepper

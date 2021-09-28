@@ -17,7 +17,7 @@ class Customer(db.Model):
     order = db.relationship('Order', back_populates='customer')
 
     def __repr__(self):
-        return f'Customer({id}, {self.firstname}, {self.lastname}, {self.phone_number}, {self.address})'
+        return f'Customer({self.firstname}, {self.lastname}, {self.phone_number}, {self.address})'
 
 
 class Address(db.Model):
@@ -30,7 +30,7 @@ class Address(db.Model):
     customer = db.relationship('Customer', order_by=Customer.id, back_populates="address")
 
     def __repr__(self):
-        return f'Address({id}, {self.street}, {self.housenumber}, {self.city}, {self.postcode})'
+        return f'Address({self.street}, {self.housenumber}, {self.city}, {self.postcode})'
 
 
 class Order(db.Model):
@@ -44,7 +44,7 @@ class Order(db.Model):
     delivery = db.relationship('DeliveryPerson', secondary='delivery', back_populates='delivery', uselist=False) # one to one
 
     def __repr__(self):
-        return f'Order({id}, {self.customer_id}, {self.order_date}, {self.discount_code})'
+        return f'Order({self.customer_id}, {self.order_date}, {self.discount_code})'
 
 
 class Orderline(db.Model):
@@ -62,42 +62,42 @@ class Orderline(db.Model):
     desert = db.relationship('Desert')
 
     def __repr__(self):
-        return f'Orderline({id}, {self.order_id}, {self.pizza_id}, {self.drink_id}, {self.desert_id}, {self.quantity})'
+        return f'Orderline({self.order_id}, {self.pizza_id}, {self.drink_id}, {self.desert_id}, {self.quantity})'
 
 
 class Pizza(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), nullable=False)
+    name = db.Column(db.String(80), unique=True, nullable=False)
     # vegetarian = db.Column(db.Boolean, nullable=False) # denormalization?
 
     # relationships
     toppings = db.relationship('Topping', secondary='pizza_toppings', back_populates='pizza')
 
     def __repr__(self):
-        return f'Pizza({id}, {self.name})'
+        return f'Pizza({self.name})'
 
 
 class Drink(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), nullable=False)
+    name = db.Column(db.String(80), unique=True, nullable=False)
     price = db.Column(db.DECIMAL(6, 2), nullable=False)
 
     def __repr__(self):
-        return f'Drink({id}, {self.name}, {self.price})'
+        return f'Drink({self.name}, {self.price})'
 
 
 class Desert(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), nullable=False)
+    name = db.Column(db.String(80), unique=True, nullable=False)
     price = db.Column(db.DECIMAL(6, 2), nullable=False)
 
     def __repr__(self):
-        return f'Desert({id}, {self.name}, {self.price})'
+        return f'Desert({self.name}, {self.price})'
 
 
 class Topping(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), nullable=False)
+    name = db.Column(db.String(80), unique=True, nullable=False)
     price = db.Column(db.DECIMAL(6, 2), nullable=False)
     vegetarian = db.Column(db.Boolean, nullable=False)
 
@@ -105,7 +105,7 @@ class Topping(db.Model):
     pizza = db.relationship('Pizza', secondary='pizza_toppings', back_populates='toppings')
 
     def __repr__(self):
-        return f'Topping({id}, {self.name}, {self.price}, {self.vegetarian})'
+        return f'Topping({self.name}, {self.price}, {self.vegetarian})'
 
 
 class PizzaToppings(db.Model):
@@ -124,7 +124,7 @@ class DeliveryPerson(db.Model):
     delivery = db.relationship('Order', secondary='delivery', back_populates='delivery')
 
     def __repr__(self):
-        return f'Delivery_person({id}, {self.area_code})'
+        return f'Delivery_person({self.area_code})'
 
 
 class Delivery(db.Model):
@@ -224,7 +224,6 @@ def create_delivery_persons():
     db.session.commit()
 
 
-db.create_all()
-create_menu()
-create_delivery_persons()
+def create_customer():
 
+db.create_all()

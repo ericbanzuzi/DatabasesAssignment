@@ -1,7 +1,9 @@
 from app import app
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+from sqlalchemy.sql import func
 
-app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql://ericbanzuzi:mysql00eb@localhost/DBproject'
+app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql://ericbanzuzi:mysql00eb@localhost/dbproject'
 db = SQLAlchemy(app)
 
 
@@ -10,7 +12,7 @@ class Customer(db.Model):
     firstname = db.Column(db.String(80), nullable=False)
     lastname = db.Column(db.String(80), nullable=False)
     phone_number = db.Column(db.String(20), nullable=False)
-    address_id = db.Column(db.Integer, db.ForeignKey('address.id'), nullable=False)
+    address_id = db.Column(db.Integer, db.ForeignKey('address.id'))
 
     # relationships, many to one
     address = db.relationship('Address', back_populates='customer')
@@ -36,7 +38,7 @@ class Address(db.Model):
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'))
-    order_datetime = db.Column(db.DateTime, nullable=False)
+    order_datetime = db.Column(db.DateTime, nullable=False, default=datetime.now())
     discount_code = db.Column(db.Boolean, nullable=False)
 
     # relationships
@@ -136,6 +138,7 @@ class Delivery(db.Model):
         return f'Delivery({self.delivery_person_id}, {self.order_id}, {self.stimated_time})'
 
 
+# run to initialize the menu data
 def create_menu():
     mozzarella = Topping(name='mozzarella', price=1.59, vegetarian=True)
     tomato_sauce = Topping(name='tomato sauce', price=0.99, vegetarian=True)
@@ -208,6 +211,7 @@ def create_menu():
     db.session.commit()
 
 
+# run to initialize the delivery persons
 def create_delivery_persons():
     db.session.add_all([
         DeliveryPerson(area_code='60'),
@@ -224,6 +228,61 @@ def create_delivery_persons():
     db.session.commit()
 
 
-def create_customer():
+def save_new_customer(firstname, lastname, phone_number, street, house_number, city, postcode):
+    new_customer = Customer(firstname=firstname, lastname=lastname, phone_number=phone_number)
+
+    address = find_single_address(street=street, house_number=house_number, city=city, postcode=postcode)
+    if address is None:
+        address = Address(street=street, house_number=house_number, city=city, postcode=postcode)
+
+    address.customer = address.customer + [new_customer]
+    db.session.add(new_customer)
+    db.session.commit()
+    return new_customer
+
+
+def find_single_address(**kwargs):
+    return Address.query.filter_by(**kwargs).first()
+
+
+def show_menu():
+
+    print('MENU:')
+    for pizza, total_price, vegetarian in db.session.query(Pizza, func.sum(Topping.price), func.count(Topping.vegetarian)).select_from(Pizza).join(PizzaToppings).\
+            join(Topping).group_by(Pizza.id).order_by(Pizza.id).all():
+
+        if vegetarian == len(pizza.toppings):
+            print(pizza.name + ' (V) ' + str(total_price))
+        else:
+            print(pizza.name + '  ' + str(total_price))
+        print([topping.name for topping in pizza.toppings])
+
+    # alternative way
+    # for pizza in db.session.query(Pizza).order_by(Pizza.id).all():
+    #     price = 0
+    #     toppings = []
+    #     vegetarian = True
+    #     for topping in pizza.toppings:
+    #         toppings.append(topping.name)
+    #         price = price + topping.price
+    #         if not topping.vegetarian:
+    #             vegetarian = False
+    #
+    #     if vegetarian:
+    #         print(pizza.name + ' (V) ' + str(price))
+    #     else:
+    #         print(pizza.name + '  ' + str(price))
+    #     print(toppings)
+
+    print()
+    print('DRINKS:')
+    for drink in db.session.query(Drink).order_by(Drink.id).all():
+        print(drink.name + '  ' + str(drink.price))
+
+    print()
+    print('DESERTS:')
+    for desert in db.session.query(Desert).order_by(Desert.id).all():
+        print(desert.name + '  ' + str(desert.price))
+
 
 db.create_all()

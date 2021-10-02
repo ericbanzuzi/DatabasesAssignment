@@ -2,9 +2,43 @@ from flask import Flask, request, render_template, make_response
 
 app = Flask(__name__)
 
+
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
+
+
+@app.route("/create-customer", methods=["POST"])
+def create_customer():
+    from models.sql_model import save_new_customer
+    data = request.json
+    print(data)
+
+    firstname = request.form["firstname"]
+    lastname = request.form["lastname"]
+    phone_number = request.form["phone_number"]
+    street = request.form["street"]
+    house_number = request.form["house_number"]
+    city = request.form["city"]
+    postcode = request.form["postcode"]
+
+    # the_user = find_single_user(username=username)
+    # if the_user is not None:
+    #     return make_response({"error": "Please select a different username."}, 400)
+    #
+    # the_user = find_single_user(email=email)
+    # if the_user is not None:
+    #     return make_response({"error": "A user with this e-mail address already exists."}, 400)
+
+    # Don't do this ^ (it puts the clear text password in the url....)
+    # hashed_pw = hash_password(password)
+
+    try:
+        save_new_customer(firstname, lastname, phone_number, street, house_number, city, postcode)
+    except Exception as ex:
+        return make_response({"error": f"could not create user {str(ex)}"}, 400)
+
+    return make_response({"result": "success"}, 200)
 
 # TODO: make a controller!
 # --- TOM'S CODE --- ##
@@ -31,32 +65,6 @@ def hello_world():
 #     return render_template("create_user.html")
 #
 #
-# @app.route("/create", methods=["POST"])
-# def create_user():
-#     username = request.form["username"]
-#     email = request.form["email"]
-#     password = request.form["password"]
-#
-#     the_user = find_single_user(username=username)
-#     if the_user is not None:
-#         return make_response({"error": "Please select a different username."}, 400)
-#
-#     the_user = find_single_user(email=email)
-#     if the_user is not None:
-#         return make_response({"error": "A user with this e-mail address already exists."}, 400)
-#
-#     # returns a message is the password does not meet complexity standards
-#     if msg := password_complexity(password):
-#         return make_response({"error": "password does not meet complexity requirements.", "failed": msg}, 400)
-#
-#     # Don't do this ^ (it puts the clear text password in the url....)
-#     hashed_pw = hash_password(password)
-#     try:
-#         save_new_user(username, hashed_pw, email)
-#     except Exception as ex:
-#         return make_response({"error": f"could not create user {str(ex)}"}, 400)
-#
-#     return make_response({"result": "success"}, 200)
 #
 #
 # @app.route("/login", methods=["GET"])

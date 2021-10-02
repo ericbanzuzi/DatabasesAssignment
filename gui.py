@@ -6,6 +6,6 @@ window = tk.Tk()
 terminal = Terminal(pady=5, padx=5)
 terminal.shell = True
 terminal.pack(expand=True, fill='both')
-terminal.run_command('python untitled1.py','y')
+terminal.run_command('python terminal.py','y')
 
 window.mainloop()

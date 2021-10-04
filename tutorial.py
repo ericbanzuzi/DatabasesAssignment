@@ -128,3 +128,19 @@ session.query(Address).outerjoin(User.addresses).all()  # LEFT OUTER JOIN
 for name, in session.query(User.name).filter(User.addresses.any()):  # any = EXISTS || has for many to one
     print(name)
 
+# alternative way
+# for pizza in db.session.query(Pizza).order_by(Pizza.id).all():
+#     price = 0
+#     toppings = []
+#     vegetarian = True
+#     for topping in pizza.toppings:
+#         toppings.append(topping.name)
+#         price = price + topping.price
+#         if not topping.vegetarian:
+#             vegetarian = False
+#
+#     if vegetarian:
+#         print(pizza.name + ' (V) ' + str(price))
+#     else:
+#         print(pizza.name + '  ' + str(price))
+#     print(toppings)

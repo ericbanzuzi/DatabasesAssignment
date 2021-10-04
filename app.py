@@ -1,4 +1,5 @@
-from flask import Flask, request, render_template, make_response
+from flask import Flask, request, make_response
+from sqlalchemy.sql import func
 
 app = Flask(__name__)
 
@@ -22,21 +23,54 @@ def create_customer():
     city = request.form["city"]
     postcode = request.form["postcode"]
 
-    # the_user = find_single_user(username=username)
-    # if the_user is not None:
-    #     return make_response({"error": "Please select a different username."}, 400)
-    #
-    # the_user = find_single_user(email=email)
-    # if the_user is not None:
-    #     return make_response({"error": "A user with this e-mail address already exists."}, 400)
-
-    # Don't do this ^ (it puts the clear text password in the url....)
-    # hashed_pw = hash_password(password)
-
     try:
         save_new_customer(firstname, lastname, phone_number, street, house_number, city, postcode)
     except Exception as ex:
         return make_response({"error": f"could not create user {str(ex)}"}, 400)
+
+    return make_response({"result": "success"}, 200)
+
+
+@app.route("/create-order", methods=["POST"])
+def create_order():
+    from models.sql_model import save_new_order, save_new_orderline, find_single_customer, find_single_address
+    import json
+    data = request.json
+    print(data)
+
+    firstname = request.form["firstname"]
+    lastname = request.form["lastname"]
+    street = request.form["street"]
+    house_number = request.form["house_number"]
+    postcode = request.form["postcode"]
+    pizzas = json.loads(request.form["pizzas"])
+    drinks = json.loads(request.form["drinks"])
+    deserts = json.loads(request.form["deserts"])
+
+    if len(pizzas) == 0:
+        return make_response({"error": "order does not contain any pizzas"}, 400)
+
+    address = find_single_address(street=street, house_number=house_number, postcode=postcode)
+    if address is None:
+        return make_response({"error": "address is not in the system"}, 400)
+
+    customer = find_single_customer(firstname=firstname, lastname=lastname, address_id=address.id)
+    if customer is None:
+        return make_response({"error": "customer has not been created"}, 400)
+
+    try:
+        order = save_new_order(customer_id=customer.id, time=func.now())
+        for orderline in pizzas:
+            save_new_orderline(order.id, "Pizza", orderline[0], orderline[1])
+
+        for orderline in drinks:
+            save_new_orderline(order.id, "Drink", orderline[0], orderline[1])
+
+        for orderline in deserts:
+            save_new_orderline(order.id, "Desert", orderline[0], orderline[1])
+
+    except Exception as ex:
+        return make_response({"error": f"could not create order {str(ex)}"}, 400)
 
     return make_response({"result": "success"}, 200)
 

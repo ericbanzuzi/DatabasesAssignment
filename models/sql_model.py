@@ -1,6 +1,5 @@
 from app import app
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
 from sqlalchemy.sql import func
 
 app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql://ericbanzuzi:mysql00eb@localhost/dbproject'
@@ -16,7 +15,7 @@ class Customer(db.Model):
 
     # relationships, many to one
     address = db.relationship('Address', back_populates='customer')
-    order = db.relationship('Order', back_populates='customer')
+    order = db.relationship('Orders', back_populates='customer')
 
     def __repr__(self):
         return f'Customer({self.firstname}, {self.lastname}, {self.phone_number}, {self.address})'
@@ -32,13 +31,13 @@ class Address(db.Model):
     customer = db.relationship('Customer', order_by=Customer.id, back_populates="address")
 
     def __repr__(self):
-        return f'Address({self.street}, {self.housenumber}, {self.city}, {self.postcode})'
+        return f'Address({self.street}, {self.house_number}, {self.city}, {self.postcode})'
 
 
-class Order(db.Model):
+class Orders(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'))
-    order_datetime = db.Column(db.DateTime, nullable=False, default=datetime.now())
+    datetime = db.Column(db.DateTime, nullable=False)
     discount_code = db.Column(db.Boolean, nullable=False)
 
     # relationships
@@ -46,19 +45,19 @@ class Order(db.Model):
     delivery = db.relationship('DeliveryPerson', secondary='delivery', back_populates='delivery', uselist=False) # one to one
 
     def __repr__(self):
-        return f'Order({self.customer_id}, {self.order_date}, {self.discount_code})'
+        return f'Orders({self.customer_id}, {self.datetime}, {self.discount_code})'
 
 
 class Orderline(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.Integer, db.ForeignKey('order.id'))
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'))
     pizza_id = db.Column(db.Integer, db.ForeignKey('pizza.id'))
     drink_id = db.Column(db.Integer, db.ForeignKey('drink.id'))
     desert_id = db.Column(db.Integer, db.ForeignKey('desert.id'))
     quantity = db.Column(db.Integer, nullable=False)
 
     # relationships, many to many
-    order = db.relationship('Order')
+    order = db.relationship('Orders')
     pizza = db.relationship('Pizza')
     drink = db.relationship('Drink')
     desert = db.relationship('Desert')
@@ -123,7 +122,7 @@ class DeliveryPerson(db.Model):
     area_code = db.Column(db.String(10), nullable=False)
 
     # relationships, many to one
-    delivery = db.relationship('Order', secondary='delivery', back_populates='delivery')
+    delivery = db.relationship('Orders', secondary='delivery', back_populates='delivery')
 
     def __repr__(self):
         return f'Delivery_person({self.area_code})'
@@ -131,11 +130,11 @@ class DeliveryPerson(db.Model):
 
 class Delivery(db.Model):
     delivery_person_id = db.Column(db.Integer, db.ForeignKey('delivery_person.id'), primary_key=True)
-    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), primary_key=True)
     estimated_time = db.Column(db.DateTime, nullable=False)
 
     def __repr__(self):
-        return f'Delivery({self.delivery_person_id}, {self.order_id}, {self.stimated_time})'
+        return f'Delivery({self.delivery_person_id}, {self.order_id}, {self.estimated_time})'
 
 
 # run to initialize the menu data
@@ -241,48 +240,67 @@ def save_new_customer(firstname, lastname, phone_number, street, house_number, c
     return new_customer
 
 
+def save_new_order(customer_id, time):
+    count = Orders.query.filter_by(customer_id=customer_id).count()
+    if count != 0 and count % 10 == 0:
+        new_order = Orders(customer_id=customer_id, datetime=time, discount_code=True)
+    else:
+        new_order = Orders(customer_id=customer_id, datetime=time, discount_code=False)
+
+    db.session.add(new_order)
+    db.session.commit()
+    return new_order
+
+
+def save_new_orderline(order_id, item_type, item_id, quantity):
+
+    if item_type == 'Pizza':
+        new_orderline = Orderline(order_id=order_id, pizza_id=item_id, quantity=quantity)
+    elif item_type == 'Drink':
+        new_orderline = Orderline(order_id=order_id, drink_id=item_id, quantity=quantity)
+    else:
+        new_orderline = Orderline(order_id=order_id, desert_id=item_id, quantity=quantity)
+
+    db.session.add(new_orderline)
+    db.session.commit()
+    return new_orderline
+
+
 def find_single_address(**kwargs):
     return Address.query.filter_by(**kwargs).first()
 
 
+def find_single_customer(**kwargs):
+    return Customer.query.filter_by(**kwargs).first()
+
+
+def find_single_order(**kwargs):
+    return Orders.query.filter_by(**kwargs).first()
+
+
 def show_menu():
-
+    print()
     print('MENU:')
-    for pizza, total_price, vegetarian in db.session.query(Pizza, func.sum(Topping.price), func.count(Topping.vegetarian)).select_from(Pizza).join(PizzaToppings).\
+    for pizza, total_price, vegetarian in db.session.query(Pizza, func.sum(Topping.price), func.count(db.case([(Topping.vegetarian, 1)]))).select_from(Pizza).join(PizzaToppings).\
             join(Topping).group_by(Pizza.id).order_by(Pizza.id).all():
-
         if vegetarian == len(pizza.toppings):
-            print(pizza.name + ' (V) ' + str(total_price))
+            print(str(pizza.id) + '. ' + pizza.name + ' (V) ' + str(total_price))
         else:
-            print(pizza.name + '  ' + str(total_price))
+            print(str(pizza.id) + '. ' + pizza.name + '  ' + str(total_price))
         print([topping.name for topping in pizza.toppings])
-
-    # alternative way
-    # for pizza in db.session.query(Pizza).order_by(Pizza.id).all():
-    #     price = 0
-    #     toppings = []
-    #     vegetarian = True
-    #     for topping in pizza.toppings:
-    #         toppings.append(topping.name)
-    #         price = price + topping.price
-    #         if not topping.vegetarian:
-    #             vegetarian = False
-    #
-    #     if vegetarian:
-    #         print(pizza.name + ' (V) ' + str(price))
-    #     else:
-    #         print(pizza.name + '  ' + str(price))
-    #     print(toppings)
 
     print()
     print('DRINKS:')
     for drink in db.session.query(Drink).order_by(Drink.id).all():
-        print(drink.name + '  ' + str(drink.price))
+        print(str(drink.id) + '. ' + drink.name + '  ' + str(drink.price))
 
     print()
     print('DESERTS:')
     for desert in db.session.query(Desert).order_by(Desert.id).all():
-        print(desert.name + '  ' + str(desert.price))
+        print(str(desert.id) + '. ' + desert.name + '  ' + str(desert.price))
+    print()
 
 
 db.create_all()
+# print(find_single_address(street="WvClaan", house_number="35A", postcode="6226BR"))
+# print(find_single_customer(firstname="Eric", lastname="Banzuzi", address_id=1))

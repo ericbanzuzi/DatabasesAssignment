@@ -5,6 +5,8 @@ from sqlalchemy.sql import func
 app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql://ericbanzuzi:mysql00eb@localhost/dbproject'
 db = SQLAlchemy(app)
 
+margin = 1.4
+vat = 1.09
 
 class Customer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -278,15 +280,28 @@ def find_single_order(**kwargs):
     return Orders.query.filter_by(**kwargs).first()
 
 
+def find_single_delivery(**kwargs):
+    return Delivery.query.filter_by(**kwargs).first()
+
+
+def find_available_delivery_person(postcode, time):
+    area = postcode[:2]
+
+    # for person in DeliveryPerson.query.filter_by(DeliveryPerson.area_code==area).all():
+    #     for delivery in Delivery.query.filter_by(Delivery.delivery_person_id==person.id).all():
+    #         if delivery.estimated_time
+
+
+
 def show_menu():
     print()
     print('MENU:')
-    for pizza, total_price, vegetarian in db.session.query(Pizza, func.sum(Topping.price), func.count(db.case([(Topping.vegetarian, 1)]))).select_from(Pizza).join(PizzaToppings).\
+    for pizza, total_price, vegetarian in db.session.query(Pizza, func.sum(Topping.price * margin), func.count(db.case([(Topping.vegetarian, 1)]))).select_from(Pizza).join(PizzaToppings).\
             join(Topping).group_by(Pizza.id).order_by(Pizza.id).all():
         if vegetarian == len(pizza.toppings):
-            print(str(pizza.id) + '. ' + pizza.name + ' (V) ' + str(total_price))
+            print(str(pizza.id) + '. ' + pizza.name + ' (V) ' + str(round(total_price * vat, 2)))
         else:
-            print(str(pizza.id) + '. ' + pizza.name + '  ' + str(total_price))
+            print(str(pizza.id) + '. ' + pizza.name + '  ' + str(round(total_price * vat, 2)))
         print([topping.name for topping in pizza.toppings])
 
     print()
@@ -301,6 +316,5 @@ def show_menu():
     print()
 
 
+
 db.create_all()
-# print(find_single_address(street="WvClaan", house_number="35A", postcode="6226BR"))
-# print(find_single_customer(firstname="Eric", lastname="Banzuzi", address_id=1))

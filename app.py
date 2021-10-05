@@ -12,8 +12,6 @@ def hello_world():
 @app.route("/create-customer", methods=["POST"])
 def create_customer():
     from models.sql_model import save_new_customer
-    data = request.json
-    print(data)
 
     firstname = request.form["firstname"]
     lastname = request.form["lastname"]
@@ -35,8 +33,6 @@ def create_customer():
 def create_order():
     from models.sql_model import save_new_order, save_new_orderline, find_single_customer, find_single_address
     import json
-    data = request.json
-    print(data)
 
     firstname = request.form["firstname"]
     lastname = request.form["lastname"]
@@ -69,12 +65,19 @@ def create_order():
         for orderline in deserts:
             save_new_orderline(order.id, "Desert", orderline[0], orderline[1])
 
+        # TODO: add available delivery guy and place it to a delivery
+
     except Exception as ex:
         return make_response({"error": f"could not create order {str(ex)}"}, 400)
 
     return make_response({"result": "success"}, 200)
 
-# TODO: make a controller!
+# TODO: let someone cancel the order if it's placed under 5 mins ago
+
+# TODO: get customer
+# TODO: get order -> display the status too
+# TODO: get a delivery?
+
 # --- TOM'S CODE --- ##
 # from controler import hash_password, check_password, password_complexity
 # from models.mongo_model import find_single_user, save_new_user

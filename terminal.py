@@ -2,7 +2,7 @@ import json
 
 from PyInquirer import prompt
 import requests
-from models.sql_model import show_menu
+from models.sql_model import show_menu, show_order
 
 BASE_URL = "http://localhost:5000"
 
@@ -106,6 +106,7 @@ if __name__ == "__main__":
 
             order(order_answers["firstname"], order_answers["lastname"], order_answers["street"],
                   order_answers["house_number"], order_answers["postcode"], pizzas, drinks, deserts)
+            show_order()
 
         if answer == "Get a customer":
             get_customer_answers = prompt(customer_id_questions)

@@ -8,6 +8,7 @@ db = SQLAlchemy(app)
 margin = 1.4
 vat = 1.09
 
+
 class Customer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     firstname = db.Column(db.String(80), nullable=False)
@@ -243,7 +244,7 @@ def save_new_customer(firstname, lastname, phone_number, street, house_number, c
 
 
 def save_new_order(customer_id, time):
-    count = Orders.query.filter_by(customer_id=customer_id).count()
+    count = Orders.query.filter_by(customer_id=customer_id).count() # TODO: pizza not order :(
     if count != 0 and count % 10 == 0:
         new_order = Orders(customer_id=customer_id, datetime=time, discount_code=True)
     else:
@@ -268,6 +269,12 @@ def save_new_orderline(order_id, item_type, item_id, quantity):
     return new_orderline
 
 
+def save_new_delivery(delivery_person_id, order_id, estimated_time):
+    new_delivery = Delivery(delivery_person_id=delivery_person_id, order_id=order_id, estimated_time=estimated_time)
+    db.session.add(new_delivery)
+    db.session.commit()
+    return new_delivery
+
 def find_single_address(**kwargs):
     return Address.query.filter_by(**kwargs).first()
 
@@ -284,6 +291,13 @@ def find_single_delivery(**kwargs):
     return Delivery.query.filter_by(**kwargs).first()
 
 
+def find_single_drink(**kwargs):
+    return Drink.query.filter_by(**kwargs).first()
+
+def find_single_desert(**kwargs):
+    return Desert.query.filter_by(**kwargs).first()
+
+
 def find_available_delivery_person(postcode, time):
     area = postcode[:2]
 
@@ -291,6 +305,15 @@ def find_available_delivery_person(postcode, time):
     #     for delivery in Delivery.query.filter_by(Delivery.delivery_person_id==person.id).all():
     #         if delivery.estimated_time
 
+
+def get_pizza_info(pizza_id):
+    info = ('', 0)
+    for name, total_price in db.session.query(Pizza.name, func.sum(Topping.price * margin)).select_from(Pizza).join(PizzaToppings).\
+            join(Topping).group_by(Pizza.id).filter(Pizza.id==pizza_id).all():
+        price = round(total_price * vat, 2)
+        pizza = name
+        info = (pizza, price)
+    return info
 
 
 def show_menu():

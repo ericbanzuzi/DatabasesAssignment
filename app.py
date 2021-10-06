@@ -74,7 +74,18 @@ def create_order():
 
 # TODO: let someone cancel the order if it's placed under 5 mins ago
 
-# TODO: get customer
+
+@app.route("/customer/<customer_id>")
+def get_user(customer_id: int):
+    from models.sql_model import find_single_customer, find_single_address
+    customer = find_single_customer(id=customer_id)
+    address = find_single_address(id=customer.address_id)
+    if customer:
+        return make_response({"firstname": customer.firstname, "lastname": customer.lastname, "phone": customer.phone_number,
+                              "street": address.street, "house_number": address.house_number, "city": address.city, "postcode": address.postcode}, 200)
+    else:
+        return make_response({"error": f"Customer with id {customer_id} does not exist"})
+
 # TODO: get order -> display the status too
 # TODO: get a delivery?
 

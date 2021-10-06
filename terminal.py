@@ -70,14 +70,14 @@ def order(firstname, lastname, street, house_number, postcode, pizzas, drinks, d
     print(response.json())
 
 
-def get_user(customer_id):
-    response = requests.get(BASE_URL + "/user/" + customer_id)
+def get_customer(customer_id):
+    response = requests.get(BASE_URL + "/customer/" + customer_id)
     print(response.json())
 
 
 if __name__ == "__main__":
+    show_menu()
     while True:
-        show_menu()
         answers = prompt(main_list)
         answer = answers["choice"]
         if answer == "Create a customer":
@@ -110,7 +110,7 @@ if __name__ == "__main__":
 
         if answer == "Get a customer":
             get_customer_answers = prompt(customer_id_questions)
-            get_user(**get_customer_answers)
+            get_customer(**get_customer_answers)
 
         if answer == "Quit":
             break

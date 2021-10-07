@@ -358,5 +358,51 @@ def show_menu():
     print()
 
 
+def show_order():
+    print()
+    print('ORDER:')
+    order = Orders.query.order_by(Orders.id.desc()).first()
+    delivery = find_single_delivery(order_id=order.id)
+
+    pizzas = []
+    drinks = []
+    deserts = []
+    total = 0
+
+    if order.discount:
+        discount = 0.9
+    else:
+        discount = 1
+
+    for orderline in Orderline.query.filter(Orderline.order_id == order.id).all():
+        if orderline.pizza_id is not None:
+            info = get_pizza_info(orderline.pizza_id)
+            pizzas.append((info[0], info[1], orderline.quantity))
+            total = total + info[1]*orderline.quantity*discount
+        elif orderline.drink_id is not None:
+            drink = find_single_drink(id=orderline.drink_id)
+            drinks.append((drink.name, drink.price, orderline.quantity))
+            total = total + float(drink.price)*orderline.quantity*discount
+        elif orderline.desert_id is not None:
+            desert = find_single_desert(id=orderline.desert_id)
+            deserts.append((desert.name, desert.price, orderline.quantity))
+            total = total + float(desert.price)*orderline.quantity*discount
+
+    print('Your order (id): '+str(order.id)+' is estimated to arrive at: '+str(delivery.estimated_time))
+
+    print('Order summary:')
+    for i in range(len(pizzas)):
+        print(' - '+str(pizzas[i][0])+' x '+str(pizzas[i][2])+'  cost:  '+str(pizzas[i][1]*pizzas[i][2]*discount))
+
+    for i in range(len(drinks)):
+        print(' - '+str(drinks[i][0])+' x '+str(drinks[i][2])+'  cost:  '+str(drinks[i][1]*drinks[i][2])*discount)
+
+    for i in range(len(deserts)):
+        print(' - '+str(deserts[i][0])+' x '+str(deserts[i][2])+'  cost:  '+str(deserts[i][1]*deserts[i][2]*discount))
+
+    print('Total price: '+str(total))
+
+    # TODO: generate discount code string if pizza count % 10 and display code
+
 
 db.create_all()

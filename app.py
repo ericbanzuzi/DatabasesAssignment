@@ -33,7 +33,7 @@ def create_customer():
 
 @app.route("/create-order", methods=["POST"])
 def create_order():
-    from models.sql_model import save_new_order, save_new_orderline, find_single_customer, find_single_address
+    from models.sql_model import save_new_order, save_new_orderline, find_single_customer, find_single_address, save_new_delivery
     import json
 
     firstname = request.form["firstname"]

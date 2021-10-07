@@ -1,6 +1,7 @@
 from app import app
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
+from datetime import datetime, timedelta
 
 app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql://ericbanzuzi:mysql00eb@localhost/dbproject'
 db = SQLAlchemy(app)
@@ -72,7 +73,6 @@ class Orderline(db.Model):
 class Pizza(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
-    # vegetarian = db.Column(db.Boolean, nullable=False) # denormalization?
 
     # relationships
     toppings = db.relationship('Topping', secondary='pizza_toppings', back_populates='pizza')
@@ -140,7 +140,7 @@ class Delivery(db.Model):
         return f'Delivery({self.delivery_person_id}, {self.order_id}, {self.estimated_time})'
 
 
-# run to initialize the menu data
+# run only once to initialize the menu data
 def create_menu():
     mozzarella = Topping(name='mozzarella', price=1.59, vegetarian=True)
     tomato_sauce = Topping(name='tomato sauce', price=0.99, vegetarian=True)
@@ -213,7 +213,7 @@ def create_menu():
     db.session.commit()
 
 
-# run to initialize the delivery persons
+# run only once to initialize the delivery persons
 def create_delivery_persons():
     db.session.add_all([
         DeliveryPerson(area_code='60'),
@@ -244,7 +244,8 @@ def save_new_customer(firstname, lastname, phone_number, street, house_number, c
 
 
 def save_new_order(customer_id, time):
-    count = Orders.query.filter_by(customer_id=customer_id).count() # TODO: pizza not order :(
+    # TODO: check for discount codes and replace current checks
+    count = get_pizza_count(customer_id)
     if count != 0 and count % 10 == 0:
         new_order = Orders(customer_id=customer_id, datetime=time, discount_code=True)
     else:
@@ -275,6 +276,7 @@ def save_new_delivery(delivery_person_id, order_id, estimated_time):
     db.session.commit()
     return new_delivery
 
+
 def find_single_address(**kwargs):
     return Address.query.filter_by(**kwargs).first()
 
@@ -294,11 +296,18 @@ def find_single_delivery(**kwargs):
 def find_single_drink(**kwargs):
     return Drink.query.filter_by(**kwargs).first()
 
+
 def find_single_desert(**kwargs):
     return Desert.query.filter_by(**kwargs).first()
 
 
-def find_available_delivery_person(postcode, time):
+def delete_single_delivery(**kwargs):
+    delivery = find_single_delivery(**kwargs)  # maybe give back the discount code, let's see
+    db.session.delete(delivery)
+    db.session.commit()
+
+
+def find_available_delivery_person(postcode, time):  # TODO: PRIORITY
     area = postcode[:2]
 
     # for person in DeliveryPerson.query.filter_by(DeliveryPerson.area_code==area).all():
@@ -314,6 +323,16 @@ def get_pizza_info(pizza_id):
         pizza = name
         info = (pizza, price)
     return info
+
+
+def get_pizza_count(customer_id):
+    customer = find_single_customer(id=customer_id)
+    count = 0
+    for order in Orders.query.filter_by(customer_id=customer.id).all():
+        for orderline in Orderline.query.filter_by(order_id=order.id).all():
+            if order.delivery is not None and orderline.pizza_id is not None:
+                count = count + orderline.quantity
+    return count
 
 
 def show_menu():

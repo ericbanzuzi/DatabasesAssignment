@@ -10,7 +10,8 @@ main_list = {
     "type": "list",
     "name": "choice",
     "message": "What do you want to do?",
-    "choices": ["Create a customer", "Create an order", "Get a customer", "Get order", "See delivery", "Quit"],
+    "choices": ["Create a customer", "Create an order", "Get a customer", "Get order details", "Track order",
+                "Cancel order", "Quit"],
 }
 
 item_list = {
@@ -57,6 +58,10 @@ desert_questions = [
     {"type": "input", "message": "Quantity", "name": "quantity"}
 ]
 
+order_id_questions = [
+    {"type": "input", "message": "Enter the id", "name": "order_id"},
+]
+
 
 def customer(firstname, lastname, phone_number, street, house_number, city, postcode):
     response = requests.post(BASE_URL + "/create-customer", data={"firstname": firstname, "lastname": lastname, "phone_number": phone_number,
@@ -72,6 +77,16 @@ def order(firstname, lastname, street, house_number, postcode, pizzas, drinks, d
 
 def get_customer(customer_id):
     response = requests.get(BASE_URL + "/customer/" + customer_id)
+    print(response.json())
+
+
+def track_order(order_id):
+    response = requests.get(BASE_URL + "/track-order/" + order_id)
+    print(response.json())
+
+
+def cancel_order(order_id):
+    response = requests.delete(BASE_URL + "/cancel-order", data={"order_id": order_id})
     print(response.json())
 
 
@@ -111,6 +126,14 @@ if __name__ == "__main__":
         if answer == "Get a customer":
             get_customer_answers = prompt(customer_id_questions)
             get_customer(**get_customer_answers)
+
+        if answer == "Track order":
+            order_id_answers = prompt(order_id_questions)
+            track_order(**order_id_answers)
+
+        if answer == "Cancel order":
+            order_id_answers = prompt(order_id_questions)
+            cancel_order(**order_id_answers)
 
         if answer == "Quit":
             break

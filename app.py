@@ -1,7 +1,9 @@
 from flask import Flask, request, make_response
-from sqlalchemy.sql import func
+from datetime import datetime
 
 app = Flask(__name__)
+
+fmt = '%Y-%m-%d %H:%M:%S'  # for datetime calculations
 
 
 @app.route("/")
@@ -55,7 +57,7 @@ def create_order():
         return make_response({"error": "customer has not been created"}, 400)
 
     try:
-        order = save_new_order(customer_id=customer.id, time=func.now())
+        order = save_new_order(customer_id=customer.id, time=datetime.now().strftime(fmt))
         for orderline in pizzas:
             save_new_orderline(order.id, "Pizza", orderline[0], orderline[1])
 
@@ -72,11 +74,34 @@ def create_order():
 
     return make_response({"result": "success"}, 200)
 
-# TODO: let someone cancel the order if it's placed under 5 mins ago
+
+@app.route("/cancel-order", methods=["DELETE"])
+def cancel_order():
+    from models.sql_model import delete_single_delivery, find_single_order
+
+    order_id = request.form["order_id"]
+    order = find_single_order(id=order_id)
+
+    now = datetime.now().strftime(fmt)
+    # calculate time difference in minutes
+    d1 = datetime.strptime(str(order.datetime), fmt)
+    d2 = datetime.strptime(now, fmt)
+    diff = d2 - d1
+    diff_minutes = diff.seconds / 60
+
+    if diff_minutes < 5:
+        try:
+            delete_single_delivery(order_id=order.id)
+        except Exception as ex:
+            return make_response({"error": f"could not cancel order {str(ex)}"}, 400)
+
+        return make_response({"result": "success"}, 200)
+    else:
+        return make_response({"error": f"order {order.id} cannot be canceled anymore"}, 400)
 
 
 @app.route("/customer/<customer_id>")
-def get_user(customer_id: int):
+def get_customer(customer_id: int):
     from models.sql_model import find_single_customer, find_single_address
     customer = find_single_customer(id=customer_id)
     address = find_single_address(id=customer.address_id)
@@ -84,71 +109,41 @@ def get_user(customer_id: int):
         return make_response({"firstname": customer.firstname, "lastname": customer.lastname, "phone": customer.phone_number,
                               "street": address.street, "house_number": address.house_number, "city": address.city, "postcode": address.postcode}, 200)
     else:
-        return make_response({"error": f"Customer with id {customer_id} does not exist"})
+        return make_response({"error": f"Customer with id {customer_id} does not exist"}, 400)
 
-# TODO: get order -> display the status too
-# TODO: get a delivery?
 
-# --- TOM'S CODE --- ##
-# from controler import hash_password, check_password, password_complexity
-# from models.mongo_model import find_single_user, save_new_user
-#
-# INVALID_MESSAGE = "Invalid username or password"
-#
-# # https://flask.palletsprojects.com/en/2.0.x/quickstart
-# # https://flask-sqlalchemy.palletsprojects.com/en/2.x/
-#
-#
-# @app.route("/user/<user_id>")
-# def get_user(user_id: int):
-#     user = find_single_user(id=user_id)
-#     if user:
-#         return make_response({"username": user.username, "email": user.email}, 200)
-#     else:
-#         return make_response({"error": f"User with id {user_id} does not exist"})
-#
-#
-# @app.route("/create", methods=["GET"])
-# def create_user_template():
-#     return render_template("create_user.html")
-#
-#
-#
-#
-# @app.route("/login", methods=["GET"])
-# def show_login():
-#     return render_template("login.html", logged_in=False)
-#
-#
-# @app.route("/login/template", methods=["POST"])
-# def process_login_template():
-#     username = request.form["username"]
-#     password = request.form["password"]
-#
-#     # First, let's check if the user exists
-#     the_user = find_single_user(username=username)
-#     if the_user is None:
-#         return render_template("login.html", logged_in=False, message=INVALID_MESSAGE)
-#
-#     # Now let's compare the stored password with the given password
-#     if check_password(the_user, password):
-#         return render_template("login.html", logged_in=True, username=username)
-#     else:
-#         return render_template("login.html", logged_in=False, message=INVALID_MESSAGE)
-#
-#
-# @app.route("/login", methods=["POST"])
-# def process_login():
-#     username = request.form["username"]
-#     password = request.form["password"]
-#
-#     # First, let's check if the user exists
-#     the_user = find_single_user(username=username)
-#     if the_user is None:
-#         return INVALID_MESSAGE
-#
-#     # Now let's compare the stored password with the given password
-#     if check_password(the_user, password):
-#         return make_response({"result": "Login successful"}, 200)
-#     else:
-#         return make_response({"error": INVALID_MESSAGE}, 400)
+@app.route("/track-order/<order_id>")
+def track_order(order_id: int):
+    from models.sql_model import find_single_order, find_single_delivery
+
+    order = find_single_order(id=order_id)
+    if order:
+        delivery = find_single_delivery(order_id=order.id)
+        if delivery is None:
+            return make_response({"status": "CANCELLED"}, 200)
+
+        now = datetime.now().strftime(fmt)
+        # calculate time difference in minutes
+        d1 = datetime.strptime(str(delivery.estimated_time), fmt)
+        d2 = datetime.strptime(now, fmt)
+        diff = d2 - d1
+        diff_minutes = diff.seconds / 60
+
+        if diff.days >= 0 and diff_minutes > 0:
+            return make_response({"status": "DELIVERED"}, 200)
+        # calculate time difference in minutes
+        d1 = datetime.strptime(str(order.datetime), fmt)
+        d2 = datetime.strptime(now, fmt)
+        diff = d2 - d1
+        diff_minutes = diff.seconds / 60
+
+        if diff_minutes < 5:
+            return make_response({"status": "IN PROCESS"}, 200)
+        else:
+            return make_response({"status": "OUT FOR DELIVERY"}, 200)
+
+    else:
+        return make_response({"error": f"Order with id {order_id} does not exist"}, 400)
+
+
+# TODO: get order with order details as a list (+terminal stuff to it)

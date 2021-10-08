@@ -33,7 +33,7 @@ def create_customer():
 
 @app.route("/create-order", methods=["POST"])
 def create_order():
-    from models.sql_model import save_new_order, save_new_orderline, find_single_customer, find_single_address, save_new_delivery
+    from models.sql_model import save_new_order, save_new_orderline, find_single_customer, find_single_address, save_available_delivery
     import json
 
     firstname = request.form["firstname"]
@@ -67,7 +67,7 @@ def create_order():
         for orderline in deserts:
             save_new_orderline(order.id, "Desert", orderline[0], orderline[1])
 
-        # TODO: add available delivery guy and place it to a delivery
+        save_available_delivery(order, address.postcode, order.datetime)
 
     except Exception as ex:
         return make_response({"error": f"could not create order {str(ex)}"}, 400)

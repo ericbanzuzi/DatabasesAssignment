@@ -8,6 +8,7 @@ db = SQLAlchemy(app)
 
 margin = 1.4
 vat = 1.09
+fmt = '%Y-%m-%d %H:%M:%S'  # for datetime calculations
 
 
 class Customer(db.Model):
@@ -307,12 +308,40 @@ def delete_single_delivery(**kwargs):
     db.session.commit()
 
 
-def find_available_delivery_person(postcode, time):  # TODO: PRIORITY
+def save_available_delivery(order, postcode, time):
     area = postcode[:2]
 
-    # for person in DeliveryPerson.query.filter_by(DeliveryPerson.area_code==area).all():
-    #     for delivery in Delivery.query.filter_by(Delivery.delivery_person_id==person.id).all():
-    #         if delivery.estimated_time
+    person_time = []
+    times = []
+
+    for person in DeliveryPerson.query.filter_by(area_code=area).all():
+        deliveries = [delivery for delivery in Delivery.query.filter_by(delivery_person_id=person.id).all()]
+        # person has no deliveries
+        if len(deliveries) == 0:
+            return save_new_delivery(delivery_person_id=person.id, order_id=order.id,
+                                     estimated_time=(time + timedelta(minutes=15)))
+        else:
+            # the person can still take the order in same delivery
+            d1 = datetime.strptime(str(deliveries[-1].estimated_time), fmt)
+            d2 = datetime.strptime(str(time), fmt)
+            diff = (d1 - timedelta(minutes=10)) - d2
+
+            if diff.days == 0 and (diff.seconds/60) <= 5:
+                return save_new_delivery(delivery_person_id=person.id, order_id=order.id,
+                                         estimated_time=d1)
+            # the person has come back
+            diff = d2 - d1
+            if diff.days == 0 and diff.seconds / 60 >= 20:
+                return save_new_delivery(delivery_person_id=person.id, order_id=order.id,
+                                         estimated_time=(d2 + timedelta(minutes=15)))
+        person_time.append((person, d1))
+        times.append(diff)
+
+    i = times.index(max(times))
+    got_back = person_time[i][1] + timedelta(minutes=20)
+    diff = got_back - time
+    minutes_add = int(diff.seconds/60)
+    return save_new_delivery(delivery_person_id=person_time[i][0].id, order_id=order.id, estimated_time=(d2+timedelta(minutes=15+minutes_add)))
 
 
 def get_pizza_info(pizza_id):
@@ -359,6 +388,7 @@ def show_menu():
 
 
 def show_order():
+    db.session.commit()  # put database up to date
     print()
     print('ORDER:')
     order = Orders.query.order_by(Orders.id.desc()).first()
@@ -369,7 +399,7 @@ def show_order():
     deserts = []
     total = 0
 
-    if order.discount:
+    if order.discount_code:
         discount = 0.9
     else:
         discount = 1
@@ -378,27 +408,27 @@ def show_order():
         if orderline.pizza_id is not None:
             info = get_pizza_info(orderline.pizza_id)
             pizzas.append((info[0], info[1], orderline.quantity))
-            total = total + info[1]*orderline.quantity*discount
+            total = total + round(info[1]*orderline.quantity*discount, 2)
         elif orderline.drink_id is not None:
             drink = find_single_drink(id=orderline.drink_id)
             drinks.append((drink.name, drink.price, orderline.quantity))
-            total = total + float(drink.price)*orderline.quantity*discount
+            total = total + round(float(drink.price)*orderline.quantity*discount, 2)
         elif orderline.desert_id is not None:
             desert = find_single_desert(id=orderline.desert_id)
             deserts.append((desert.name, desert.price, orderline.quantity))
-            total = total + float(desert.price)*orderline.quantity*discount
+            total = total + round(float(desert.price)*orderline.quantity*discount, 2)
 
     print('Your order (id): '+str(order.id)+' is estimated to arrive at: '+str(delivery.estimated_time))
 
     print('Order summary:')
     for i in range(len(pizzas)):
-        print(' - '+str(pizzas[i][0])+' x '+str(pizzas[i][2])+'  cost:  '+str(pizzas[i][1]*pizzas[i][2]*discount))
+        print(' - '+str(pizzas[i][0])+' x '+str(pizzas[i][2])+'  cost:  '+str(round(pizzas[i][1]*pizzas[i][2]*discount, 2)))
 
     for i in range(len(drinks)):
-        print(' - '+str(drinks[i][0])+' x '+str(drinks[i][2])+'  cost:  '+str(drinks[i][1]*drinks[i][2])*discount)
+        print(' - '+str(drinks[i][0])+' x '+str(drinks[i][2])+'  cost:  '+str(round(drinks[i][1]*drinks[i][2]*discount, 2)))
 
     for i in range(len(deserts)):
-        print(' - '+str(deserts[i][0])+' x '+str(deserts[i][2])+'  cost:  '+str(deserts[i][1]*deserts[i][2]*discount))
+        print(' - '+str(deserts[i][0])+' x '+str(deserts[i][2])+'  cost:  '+str(round(deserts[i][1]*deserts[i][2]*discount, 2)))
 
     print('Total price: '+str(total))
 

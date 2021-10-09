@@ -1,6 +1,6 @@
 # DatabasesAssignment
 
-## A pizza application with a predefined menu 
+## A database pizza application with a predefined menu 
 - create customers
 - make orders
 - cancel orders

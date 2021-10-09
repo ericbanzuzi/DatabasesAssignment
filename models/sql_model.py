@@ -2,6 +2,7 @@ from app import app
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 from datetime import datetime, timedelta
+from discount_controller import *
 
 app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql://ericbanzuzi:mysql00eb@localhost/dbproject'
 db = SQLAlchemy(app)
@@ -202,6 +203,8 @@ def create_menu():
     # drinks
     coke = Drink(name='Coca-Cola', price=1.99)
     fanta = Drink(name='Fanta', price=1.99)
+    sprite = Drink(name='Sprite', price=1.99)
+    iced_tea =Drink(name='Iced-Tea', price = 1.99)
 
     # deserts
     cheese_cake = Desert(name='Cheese cake', price=3.50)
@@ -209,7 +212,7 @@ def create_menu():
 
     db.session.add_all([
         pizza, pizza2, pizza3, pizza4, pizza5, pizza6, pizza7, pizza8, pizza9, pizza10,
-        coke, fanta, cheese_cake, ice_cream
+        coke, fanta, sprite, iced_tea, cheese_cake, ice_cream
     ])
     db.session.commit()
 

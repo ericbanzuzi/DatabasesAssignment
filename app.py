@@ -44,6 +44,7 @@ def create_order():
     pizzas = json.loads(request.form["pizzas"])
     drinks = json.loads(request.form["drinks"])
     deserts = json.loads(request.form["deserts"])
+    discount = request.form["discount"]
 
     if len(pizzas) == 0:
         return make_response({"error": "order does not contain any pizzas"}, 400)
@@ -57,7 +58,7 @@ def create_order():
         return make_response({"error": "customer has not been created"}, 400)
 
     try:
-        order = save_new_order(customer_id=customer.id, time=datetime.now().strftime(fmt))
+        order = save_new_order(customer_id=customer.id, time=datetime.now().strftime(fmt), code=discount)
         for orderline in pizzas:
             save_new_orderline(order.id, "Pizza", orderline[0], orderline[1])
 

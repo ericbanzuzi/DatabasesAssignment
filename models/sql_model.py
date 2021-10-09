@@ -244,10 +244,9 @@ def save_new_customer(firstname, lastname, phone_number, street, house_number, c
     return new_customer
 
 
-def save_new_order(customer_id, time):
-    # TODO: check for discount codes and replace current checks
-    count = get_pizza_count(customer_id)
-    if count != 0 and count % 10 == 0:
+def save_new_order(customer_id, time, code):
+
+    if check_discount(code):
         new_order = Orders(customer_id=customer_id, datetime=time, discount_code=True)
     else:
         new_order = Orders(customer_id=customer_id, datetime=time, discount_code=False)
@@ -432,7 +431,9 @@ def show_order():
 
     print('Total price: '+str(total))
 
-    # TODO: generate discount code string if pizza count % 10 and display code
+    count = get_pizza_count(order.customer_id)
+    if count != 0 and count % 10 == 0:
+        print('Use this code for next order to get discount: ' + new_discount_code())
 
 
 db.create_all()

@@ -3,7 +3,6 @@ import json
 from PyInquirer import prompt
 import requests
 from models.sql_model import show_menu, show_order
-from time import sleep
 
 BASE_URL = "http://localhost:5000"
 
@@ -11,7 +10,7 @@ main_list = {
     "type": "list",
     "name": "choice",
     "message": "What do you want to do?",
-    "choices": ["Create a customer", "Create an order", "Get a customer", "Get order details", "Track order",
+    "choices": ["Create a customer", "Create an order", "Get a customer", "Track order",
                 "Cancel order", "Quit"],
 }
 
@@ -19,7 +18,7 @@ item_list = {
     "type": "list",
     "name": "choice",
     "message": "Add item to order",
-    "choices": ["Pizza", "Drink", "Desert", "Ready"],
+    "choices": ["Pizza", "Drink", "Desert", "Discount code", "Ready"],
 }
 
 order_questions = [
@@ -27,7 +26,7 @@ order_questions = [
     {"type": "input", "message": "Last name", "name": "lastname"},
     {"type": "input", "message": "Street", "name": "street"},
     {"type": "input", "message": "House number", "name": "house_number"},
-    {"type": "input", "message": "Post code", "name": "postcode"},
+    {"type": "input", "message": "Post code", "name": "postcode"}
 ]
 
 customer_questions = [
@@ -41,7 +40,7 @@ customer_questions = [
 ]
 
 customer_id_questions = [
-    {"type": "input", "message": "Enter the id", "name": "customer_id"},
+    {"type": "input", "message": "Enter the id", "name": "customer_id"}
 ]
 
 pizza_questions = [
@@ -60,7 +59,11 @@ desert_questions = [
 ]
 
 order_id_questions = [
-    {"type": "input", "message": "Enter the id", "name": "order_id"},
+    {"type": "input", "message": "Enter the id", "name": "order_id"}
+]
+
+discount_questions = [
+    {"type": "input", "message": "Enter the code", "name": "discount_code"}
 ]
 
 
@@ -70,9 +73,10 @@ def customer(firstname, lastname, phone_number, street, house_number, city, post
     print(response.json())
 
 
-def order(firstname, lastname, street, house_number, postcode, pizzas, drinks, deserts):
+def order(firstname, lastname, street, house_number, postcode, pizzas, drinks, deserts, discount_code):
     response = requests.post(BASE_URL + "/create-order", data={"firstname": firstname, "lastname": lastname, "street": street, "house_number": house_number,
-                                                               "postcode": postcode, "pizzas": json.dumps(pizzas), "drinks": json.dumps(drinks), "deserts": json.dumps(deserts)})
+                                                               "postcode": postcode, "pizzas": json.dumps(pizzas), "drinks": json.dumps(drinks), "deserts": json.dumps(deserts),
+                                                               "discount": discount_code})
     print(response.json())
 
 
@@ -105,6 +109,7 @@ if __name__ == "__main__":
             pizzas = []
             drinks = []
             deserts = []
+            discount = ""
             while True:
                 items = prompt(item_list)
                 item = items["choice"]
@@ -117,12 +122,16 @@ if __name__ == "__main__":
                 if item == "Desert":
                     desert_ans = prompt(desert_questions)
                     deserts.append((int(desert_ans["desert_id"]), int(desert_ans["quantity"])))
+                if item == "Discount code":
+                    discount_ans = prompt(discount_questions)
+                    discount = discount_ans["discount_code"]
+                    print(discount_ans)
+                    print(discount)
                 if item == "Ready":
                     break
 
             order(order_answers["firstname"], order_answers["lastname"], order_answers["street"],
-                  order_answers["house_number"], order_answers["postcode"], pizzas, drinks, deserts)
-            sleep(0.5)
+                  order_answers["house_number"], order_answers["postcode"], pizzas, drinks, deserts, discount)
             show_order()
 
         if answer == "Get a customer":

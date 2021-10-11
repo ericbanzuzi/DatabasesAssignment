@@ -6,7 +6,7 @@ app = Flask(__name__)
 fmt = '%Y-%m-%d %H:%M:%S'  # for datetime calculations
 
 
-@app.route("/")
+@app.route("/") # hello :)
 def hello_world():
     return "<p>Hello, World!</p>"
 
@@ -139,12 +139,9 @@ def track_order(order_id: int):
         diff_minutes = diff.seconds / 60
 
         if diff_minutes < 5:
-            return make_response({"status": "IN PROCESS"}, 200)
+            return make_response({"status": "IN PROCESS", "estimated_time": delivery.estimated_time}, 200)
         else:
-            return make_response({"status": "OUT FOR DELIVERY"}, 200)
+            return make_response({"status": "OUT FOR DELIVERY", "estimated_time": delivery.estimated_time}, 200)
 
     else:
         return make_response({"error": f"Order with id {order_id} does not exist"}, 400)
-
-
-# TODO: get order with order details as a list (+terminal stuff to it)

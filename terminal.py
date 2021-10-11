@@ -125,8 +125,6 @@ if __name__ == "__main__":
                 if item == "Discount code":
                     discount_ans = prompt(discount_questions)
                     discount = discount_ans["discount_code"]
-                    print(discount_ans)
-                    print(discount)
                 if item == "Ready":
                     break
 

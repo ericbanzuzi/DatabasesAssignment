@@ -15,7 +15,6 @@ def new_discount_code():
 
 
 def check_discount(code):
-    print(code)
     with open("discounts/discountCodes.txt") as f:
         lines = f.read().splitlines()
     f.close()

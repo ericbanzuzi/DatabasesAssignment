@@ -4,7 +4,7 @@ from sqlalchemy.sql import func
 from datetime import datetime, timedelta
 from discount_controller import *
 
-app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql://ericbanzuzi:mysql00eb@localhost/dbproject'
+app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql://*****:*****@localhost/dbproject'
 db = SQLAlchemy(app)
 
 margin = 1.4
